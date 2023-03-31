@@ -1,0 +1,23 @@
+controllers:
+    resource: ../src/Controller/
+    type: attribute
+
+user_index:
+  path: /user
+  controller: App\Controller\UserController::index
+  methods: GET
+
+user_register:
+  path: /register
+  controller: App\Controller\UserController::register
+  methods: POST
+
+user_login:
+  path: /login
+  controller: App\Controller\UserController::login
+  methods: POST
+
+user_update:
+  path: /update
+  controller: App\Controller\UserController::update
+  methods: PUT
