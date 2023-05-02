@@ -16,9 +16,15 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validation;
-use Symfony\Component\Validator\Constraints\Email;
 use App\Services\JwtAuth;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Exception;
+
+
+
 
 class UserController extends AbstractController
 {
@@ -85,7 +91,7 @@ class UserController extends AbstractController
             'message' => 'El usuario no ha sido creado',
             //'pruebas' => $params
         ];
-
+        try {
         // Comprobar y validar datos 
         if (!empty($json)) {
             // Validar campos requeridos
@@ -175,6 +181,11 @@ class UserController extends AbstractController
             $data['status'] = 'success';
             $data['code'] = '201';
             $data['message'] = 'El usuario ha sido creado correctamente';
+        }} catch (Exception $e) {
+            $data['status'] = 'error';
+            $data['code'] = '400';
+            $data['message'] = $e->getMessage();
+           
         }
 
         return $this->resjson($data);
@@ -353,4 +364,82 @@ class UserController extends AbstractController
 
         return $this->resjson($data);
     }
+
+    public function contact(Request $request, MailerInterface $mailer)
+    {
+        // Recibir los datos del formulario
+        $jsonData = $request->get('json', null);
+        $data = json_decode($jsonData, true);
+    
+        // Validar los datos del formulario
+        if (empty($data['nombre']) || empty($data['email']) || empty($data['mensaje'])) {
+            $response = [
+                'status' => 'error',
+                'message' => 'Faltan campos obligatorios en el formulario de contacto'
+            ];
+            return new JsonResponse($response, 400);
+        }
+    
+        // Crear un mensaje de correo
+        $message = (new Email())
+            //->from($data['email'])
+            ->from('playmatedaw@gmail.com')
+            ->to('leonarisadria@gmail.com')
+            ->subject('Soporte de '.$data['email'])
+            ->text('Remitente: '.$data['nombre'].' ('.$data['email'].')'."\n\n".$data['mensaje']);
+    
+        // Enviar el mensaje de correo
+        $mailer->send($message);
+    
+        // Devolver un echo con los datos del formulario
+        $response = [
+            'status' => 'success',
+            'message' => 'Tu mensaje ha sido enviado correctamente',
+            'data' => $data
+        ];
+        return new JsonResponse($response);
+    }
+
+    public function logout(TokenStorageInterface $tokenStorage): JsonResponse
+    {
+        $tokenStorage->setToken(null);
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Logout successful.'
+        ]);
+    }
+
+    /*public function getAllUsers(): JsonResponse
+    {
+       /* $userRepository = $this->entityManager->getRepository(User::class);
+        $users = $userRepository->findAll();
+        return $this->json($users);
+    }*/
+
+    public function getAllUsers(): Response
+    {
+        $entityManager = $this->entityManager;
+    
+        $users = $entityManager->createQueryBuilder()
+            ->select('u', 'c1', 'c2', 'c3', 'r', 'sr', 'tr', 'a', 'av')
+            ->from(User::class, 'u')
+            ->innerJoin('u.idFirstCharacter', 'c1')
+            ->innerJoin('u.idSecondCharacter', 'c2')
+            ->innerJoin('u.idThirdCharacter', 'c3')
+            ->innerJoin('u.idRank', 'r')
+            ->innerJoin('u.idSrole', 'sr')
+            ->innerJoin('u.idTrole', 'tr')
+            ->innerJoin('u.idAmbition', 'a')
+            ->innerJoin('u.idAvailability', 'av')
+            ->getQuery()
+            ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+    
+        return $this->json($users);
+    }
+    
+
+    
+
+
 };

@@ -17,7 +17,7 @@ class Rank
      *
      * @ORM\Column(name="id_rank", type="integer", nullable=false)
      * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
+     * @ORM\GeneratedValue(strategy="AUTO")
      */
     private $idRank;
 
@@ -31,9 +31,9 @@ class Rank
     /**
      * @var int|null
      *
-     * @ORM\Column(name="number_rank", type="integer", nullable=true)
+     * @ORM\Column(name="img_rank", type="string", length=200, nullable=true)
      */
-    private $numberRank;
+    private $imgRank;
 
     public function getIdRank(): ?int
     {
@@ -52,14 +52,14 @@ class Rank
         return $this;
     }
 
-    public function getNumberRank(): ?int
+    public function getImgRank(): ?string
     {
-        return $this->numberRank;
+        return $this->imgRank;
     }
 
-    public function setNumberRank(?int $numberRank): self
+    public function setImgRank(?string $imgRank): self
     {
-        $this->numberRank = $numberRank;
+        $this->imgRank = $imgRank;
 
         return $this;
     }

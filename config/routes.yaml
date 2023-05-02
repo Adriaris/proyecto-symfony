@@ -21,3 +21,18 @@ user_update:
   path: /update
   controller: App\Controller\UserController::update
   methods: PUT
+
+user_contact:
+  path: /contact
+  controller: App\Controller\UserController::contact
+  methods: POST
+
+app_logout:
+  path: /logout
+  controller: App\Controller\UserController::logout
+  methods: [POST, DELETE]
+
+get_all_users:
+  path: /getallusers
+  controller: App\Controller\UserController::getAllUsers
+  methods: GET

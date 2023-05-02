@@ -27,3 +27,20 @@ services:
         arguments:
             $manager: '@doctrine.orm.default_entity_manager'
             #$key: '%env(resolve:APP_SECRET)%'
+
+    App\Services\ValorantApiService:
+        class: App\Services\ValorantApiService
+        arguments: []
+
+    App\Services\RanksApiService:
+        class: App\Services\RanksApiService
+        arguments: []
+
+    App\Command\UpdateAgentsCommand:
+        class: App\Command\UpdateAgentsCommand
+        arguments:
+            - '@doctrine.orm.entity_manager'
+            - '@App\Services\ValorantApiService'
+            - '@App\Services\RanksApiService'
+        tags:
+            - { name: 'console.command' }

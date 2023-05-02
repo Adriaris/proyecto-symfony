@@ -41,7 +41,7 @@ class User implements \JsonSerializable
     /**
      * @var string
      *
-     * @ORM\Column(name="nationality", type="string", length=50, nullable=false)
+     * @ORM\Column(name="nationality", type="string", length=100, nullable=false)
      */
     private $nationality;
 

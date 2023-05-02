@@ -19,7 +19,7 @@ class Character
      *
      * @ORM\Column(name="id_character", type="integer", nullable=false)
      * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
+     * @ORM\GeneratedValue(strategy="AUTO")
      */
     private $idCharacter;
 
@@ -62,6 +62,13 @@ class Character
     public function getIdCharacter(): ?int
     {
         return $this->idCharacter;
+    }
+
+    public function setIdCharacter(?string $idCharacter): self
+    {
+        $this->idCharacter = $idCharacter;
+
+        return $this;
     }
 
     public function getDisplayName(): ?string
