@@ -36,3 +36,43 @@ get_all_users:
   path: /getallusers
   controller: App\Controller\UserController::getAllUsers
   methods: GET
+
+get_user_by_token:
+  path: /getuserbytoken
+  controller: App\Controller\UserController::getUserByToken
+  methods: GET
+
+app_friend:
+  path: /friends
+  controller: App\Controller\FriendController::addFriend
+  methods: [POST]
+
+get_pending_friend_requests:
+  path: /friends/pending
+  controller: App\Controller\FriendController::getPendingFriendRequests
+  methods: [GET]
+
+update_friendship_status:
+    path:     /friends/{id}/status/{status}
+    controller: App\Controller\FriendController::updateFriendshipStatus
+    methods:  [PUT]
+
+check_friendship:
+  path: /friends/check/{idUser2}
+  methods: [GET]
+  controller: App\Controller\FriendController::checkFriendship
+
+friends_list:
+  path: /friends/list
+  methods: [GET]
+  controller: App\Controller\FriendController::listFriends
+
+update_profile_img:
+  path: /api/profile/update-img
+  controller: App\Controller\UserController::updateProfileImg
+  methods: [POST]
+
+profile_image:
+  path: /api/profile/image
+  controller: App\Controller\UserController::getProfileImg
+  methods: [GET]

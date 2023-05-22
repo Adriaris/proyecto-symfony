@@ -67,6 +67,13 @@ class User implements \JsonSerializable
     private $passwd;
 
     /**
+     * @var string|null
+     *
+     * @ORM\Column(name="profile_img", type="string", length=255, nullable=true)
+     */
+    private $profileImg;
+
+    /**
      * @var \App\Entity\Rank|null
      *
      * @ORM\ManyToOne(targetEntity="Rank")
@@ -247,6 +254,18 @@ class User implements \JsonSerializable
         return $this;
     }
 
+    public function getProfileImg(): ?string
+    {
+        return $this->profileImg;
+    }
+
+    public function setProfileImg(?string $profileImg): self
+    {
+        $this->profileImg = $profileImg;
+
+        return $this;
+    }
+
     public function getIdRank(): ?Rank
     {
         return $this->idRank;
@@ -343,7 +362,8 @@ class User implements \JsonSerializable
         return $this;
     }
 
-    public function jsonSerialize() {
+    public function jsonSerialize()
+    {
         return [
             'id' => $this->id,
             'nickname' => $this->nickname,
@@ -351,11 +371,12 @@ class User implements \JsonSerializable
             'nationality' => $this->nationality,
             'short_description' => $this->shortDescription,
             'email' => $this->email,
-            'passwd' => $this->passwd,
+            //'passwd' => $this->passwd,
+            //'profile_img' => 'http://localhost:8000/uploads/profile-img/'.$this->profileImg,
             'id_rank' => $this->idRank ? $this->idRank->getIdRank() : null,
             'id_ambition' => $this->idAmbition ? $this->idAmbition->getIdAmbition() : null,
             'id_srole' => $this->idSrole ? $this->idSrole->getIdSrole() : null,
-            //'id_availability' => $this->idAvailability,
+            'id_availability' => $this->idAvailability ? $this->idAvailability->getIdAvailability() : null,
             'id_trole' => $this->idTrole ? $this->idTrole->getIdTrole() : null,
             'id_first_character' => $this->idFirstCharacter ? $this->idFirstCharacter->getIdCharacter() : null,
             'id_second_character' => $this->idSecondCharacter ? $this->idSecondCharacter->getIdCharacter() : null,
@@ -363,5 +384,4 @@ class User implements \JsonSerializable
             //'characters' => $characters
         ];
     }
-    
 }

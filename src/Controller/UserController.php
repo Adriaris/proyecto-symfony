@@ -92,100 +92,96 @@ class UserController extends AbstractController
             //'pruebas' => $params
         ];
         try {
-        // Comprobar y validar datos 
-        if (!empty($json)) {
-            // Validar campos requeridos
-            $required_fields = ['nickname', 'nationality', 'email', 'passwd', 'id_availability', 'id_rank', 'id_ambition', 'id_srole', 'id_trole', 'id_first_character', 'id_second_character', 'id_third_character'];
-            foreach ($required_fields as $field) {
-                if (empty($params[$field])) {
-                    $data['message'] = "El campo '$field' es requerido";
-                    //$data['pruebas'] = $params;
+            // Comprobar y validar datos 
+            if (!empty($json)) {
+                // Validar campos requeridos
+                $required_fields = ['nickname', 'nationality', 'email', 'passwd', 'id_availability', 'id_rank', 'id_ambition', 'id_srole', 'id_trole', 'id_first_character', 'id_second_character', 'id_third_character'];
+                foreach ($required_fields as $field) {
+                    if (empty($params[$field])) {
+                        $data['message'] = "The field '$field' is required";
+                        //$data['pruebas'] = $params;
+                        return $this->resjson($data);
+                    }
+                }
+
+                // Validar email
+                if (!filter_var($params['email'], FILTER_VALIDATE_EMAIL)) {
+                    $data['message'] = "The email is not valid";
                     return $this->resjson($data);
                 }
-            }
 
-            // Validar email
-            if (!filter_var($params['email'], FILTER_VALIDATE_EMAIL)) {
-                $data['message'] = "El email no es válido";
+                // Comprobar si ya existe un usuario con ese email
+                $userRepository = $this->entityManager->getRepository(User::class);
+                $existingUser = $userRepository->findOneBy(['email' => $params['email']]);
+                if ($existingUser) {
+                    $data['message'] = "There is already a user with that email";
+                    return $this->resjson($data);
+                }
+
+                // Comprobar si ya existe un usuario con ese nickname
+                $existingNickname = $userRepository->findOneBy(['nickname' => $params['nickname']]);
+                if ($existingNickname) {
+                    $data['message'] = "There is already a user with that nickname";
+                    return $this->resjson($data);
+                }
+
+                // Validar fecha de nacimiento
+                /*if (!empty($params['age']) && !\DateTime::createFromFormat('Y-m-d', $params['age'])) {
+                $data['message'] = "The date of birth is invalid";
                 return $this->resjson($data);
+            }*/
+
+                // Crear objeto User
+                $user = new User();
+                $user->setNickname($params['nickname']);
+                if (!empty($params['age'])) {
+                    $user->setAge(new \DateTime($params['age']));
+                }
+                $user->setNationality($params['nationality']);
+                if (!empty($params['short_description'])) {
+                    $user->setShortDescription($params['short_description']);
+                }
+                $user->setEmail($params['email']);
+                $user->setPasswd(password_hash($params['passwd'], PASSWORD_DEFAULT));
+
+
+                // Asociar objetos (fk bbdd)
+                $availabilityRepository = $this->entityManager->getRepository(Availability::class);
+                $user->setIdAvailability($availabilityRepository->find($params['id_availability']));
+
+                $rankRepository = $this->entityManager->getRepository(Rank::class);
+                $rank = $rankRepository->find($params['id_rank']);
+                $user->setIdRank($rank);
+
+                $ambitionRepository = $this->entityManager->getRepository(Ambition::class);
+                $user->setIdAmbition($ambitionRepository->find($params['id_ambition']));
+
+                $sroleRepository = $this->entityManager->getRepository(SoloRole::class);
+                $user->setIdSrole($sroleRepository->find($params['id_srole']));
+
+                $troleRepository = $this->entityManager->getRepository(TeamRole::class);
+                $user->setIdTrole($troleRepository->find($params['id_trole']));
+
+                $characterRepository = $this->entityManager->getRepository(Character::class);
+                $user->setIdFirstCharacter($characterRepository->find($params['id_first_character']));
+                $user->setIdSecondCharacter($characterRepository->find($params['id_second_character']));
+                $user->setIdThirdCharacter($characterRepository->find($params['id_third_character']));
+
+                // Guardar usuario en la base de datos
+                $entityManager = $this->entityManager;
+
+                $entityManager->persist($user);
+                $entityManager->flush();
+
+                // Cambiar respuesta por defecto
+                $data['status'] = 'success';
+                $data['code'] = '201';
+                $data['message'] = 'El usuario ha sido creado correctamente';
             }
-
-            // Comprobar si ya existe un usuario con ese email
-            $userRepository = $this->entityManager->getRepository(User::class);
-            $existingUser = $userRepository->findOneBy(['email' => $params['email']]);
-            if ($existingUser) {
-                $data['message'] = "Ya existe un usuario con ese email";
-                return $this->resjson($data);
-            }
-
-            // Comprobar si ya existe un usuario con ese nickname
-            $existingNickname = $userRepository->findOneBy(['nickname' => $params['nickname']]);
-            if ($existingNickname) {
-                $data['message'] = "Ya existe un usuario con ese nickname";
-                return $this->resjson($data);
-            }
-
-            // Validar fecha de nacimiento
-            if (!empty($params['age']) && !\DateTime::createFromFormat('Y-m-d', $params['age'])) {
-                $data['message'] = "La fecha de nacimiento no es válida";
-                return $this->resjson($data);
-            }
-
-            // Crear objeto User
-            $user = new User();
-            $user->setNickname($params['nickname']);
-            if (!empty($params['age'])) {
-                $user->setAge(new \DateTime($params['age']));
-            }
-            $user->setNationality($params['nationality']);
-            if (!empty($params['short_description'])) {
-                $user->setShortDescription($params['short_description']);
-            }
-            $user->setEmail($params['email']);
-            $user->setPasswd(password_hash($params['passwd'], PASSWORD_DEFAULT));
-            //$user->setIdRank($params['id_rank']);
-            //$user->setIdAmbition($params['id_ambition']);
-            //$user->setIdSrole($params['id_srole']);
-            //$user->setIdTrole($params['id_trole']);
-
-            // Asociar objetos (fk bbdd)
-            $availabilityRepository = $this->entityManager->getRepository(Availability::class);
-            $user->setIdAvailability($availabilityRepository->find($params['id_availability']));
-
-            $rankRepository = $this->entityManager->getRepository(Rank::class);
-            $rank = $rankRepository->find($params['id_rank']);
-            $user->setIdRank($rank);
-
-            $ambitionRepository = $this->entityManager->getRepository(Ambition::class);
-            $user->setIdAmbition($ambitionRepository->find($params['id_ambition']));
-
-            $sroleRepository = $this->entityManager->getRepository(SoloRole::class);
-            $user->setIdSrole($sroleRepository->find($params['id_srole']));
-
-            $troleRepository = $this->entityManager->getRepository(TeamRole::class);
-            $user->setIdTrole($troleRepository->find($params['id_trole']));
-
-            $characterRepository = $this->entityManager->getRepository(Character::class);
-            $user->setIdFirstCharacter($characterRepository->find($params['id_first_character']));
-            //$user->setIdSecondCharacter($characterRepository->find($params['id_second_character']));
-            $user->setIdSecondCharacter($characterRepository->find($params['id_second_character']));
-            $user->setIdThirdCharacter($characterRepository->find($params['id_third_character']));
-
-            // Guardar usuario en la base de datos
-            $entityManager = $this->entityManager;
-       
-            $entityManager->persist($user);
-            $entityManager->flush();
-
-            // Cambiar respuesta por defecto
-            $data['status'] = 'success';
-            $data['code'] = '201';
-            $data['message'] = 'El usuario ha sido creado correctamente';
-        }} catch (Exception $e) {
+        } catch (Exception $e) {
             $data['status'] = 'error';
             $data['code'] = '400';
             $data['message'] = $e->getMessage();
-           
         }
 
         return $this->resjson($data);
@@ -240,6 +236,138 @@ class UserController extends AbstractController
         return $this->resjson($data);
     }
 
+    public function updateProfileImg(Request $request, JwtAuth $jwt_auth)
+    {
+        // Recoger cabecera de autenticación
+        $token = $request->headers->get('Authorization');
+        // Crear método para comprobar si el token es correcto
+        $authCheck = $jwt_auth->checkToken($token);
+
+        // Respuesta por defecto
+        $data = [
+            'status' => 'error',
+            'code' => Response::HTTP_BAD_REQUEST,
+            'message' => 'Invalid request.',
+        ];
+
+        // Si el token es correcto, realizar la actualización del usuario
+        if ($authCheck) {
+            // Conseguir el entity manager
+            $em = $this->entityManager;
+
+            // Conseguir los datos del usuario autenticado
+            $identity = $jwt_auth->checkToken($token, true);
+
+            // Conseguir el usuario a actualizar
+            $userRepository = $em->getRepository(User::class);
+            $user = $userRepository->findOneBy([
+                'id' => $identity->sub
+            ]);
+
+            // Comprobar si se proporcionó la imagen en la solicitud
+            if ($request->files->has('image')) {
+                // Obtener el archivo de imagen
+                $file = $request->files->get('image');
+
+                // Generar un nombre único para el archivo
+                $fileName = md5(uniqid()) . '.' . $file->getClientOriginalExtension();
+
+                // Mover el archivo a la carpeta deseada (por ejemplo, assets/images/profile-img)
+                $file->move($this->getParameter('kernel.project_dir') . '/public/uploads/profile-img', $fileName);
+
+
+
+                // Actualizar la ruta de la imagen en el usuario
+                $user->setProfileImg($fileName);
+
+                try {
+                    // Persistir los cambios en la base de datos
+                    $em->persist($user);
+                    $em->flush();
+
+                    // Respuesta exitosa
+                    $data = [
+                        'status' => 'success',
+                        'code' => Response::HTTP_OK,
+                        'message' => 'Profile image updated successfully.',
+                    ];
+                } catch (\Exception $e) {
+                    // Error al guardar los cambios
+                    $data['message'] = 'Unable to update profile image.';
+                }
+            } else {
+                // No se proporcionó la imagen en la solicitud
+                $data['message'] = 'Image not found in the request.';
+            }
+        }
+
+        // Crear la respuesta JSON
+        $response = new JsonResponse($data, $data['code']);
+
+        return $response;
+    }
+
+    public function getProfileImg(Request $request, JwtAuth $jwt_auth)
+{
+    // Recoger cabecera de autenticación
+    $token = $request->headers->get('Authorization');
+    // Crear método para comprobar si el token es correcto
+    $authCheck = $jwt_auth->checkToken($token);
+
+    // Respuesta por defecto
+    $data = [
+        'status' => 'error',
+        'code' => Response::HTTP_BAD_REQUEST,
+        'message' => 'Invalid request.',
+    ];
+
+    // Si el token es correcto, realizar la búsqueda del usuario
+    if ($authCheck) {
+        // Conseguir el entity manager
+        $em = $this->entityManager;
+
+        // Conseguir los datos del usuario autenticado
+        $identity = $jwt_auth->checkToken($token, true);
+
+        // Conseguir el usuario por su ID
+        $userRepository = $em->getRepository(User::class);
+        $user = $userRepository->find($identity->sub);
+
+        // Verificar si se encontró el usuario
+        if ($user) {
+            // Obtener la ruta de la imagen de perfil
+            $profileImg = $user->getProfileImg();
+                        
+            // Verificar si se ha establecido una imagen de perfil
+            if ($profileImg) {
+                // La imagen de perfil existe, devolver la ruta
+                $data = [
+                    'status' => 'success',
+                    'code' => Response::HTTP_OK,
+                    'profile_img' => 'http://localhost:8000/uploads/profile-img/'.$profileImg,
+                ];
+            } else {
+                $data = [
+                    'status' => 'success',
+                    'code' => Response::HTTP_OK,
+                    'profile_img' => 'http://localhost:8000/uploads/profile-img/default.png',
+                ];
+            }
+        } else {
+            // No se encontró el usuario
+            $data['message'] = 'User not found.';
+        }
+    }
+
+    // Crear la respuesta JSON
+    $response = new JsonResponse($data, $data['code']);
+
+    return $response;
+}
+
+
+
+
     public function update(Request $request, JwtAuth $jwt_auth)
     {
 
@@ -271,13 +399,15 @@ class UserController extends AbstractController
             ]);
 
             //RECOGER LOS DATOS POR POST 
-            $json = $request->get('json', null);
+            // Recoger el cuerpo de la solicitud
+            $json = $request->getContent();
             $params = json_decode($json);
+
 
             //COMPROBAR Y VALIDAR LOS DATOS 
             if (!empty($json)) {
                 // Validar campos requeridos
-                $required_fields = ['nickname', 'nationality', 'email', 'passwd', 'id_availability', 'id_rank', 'id_ambition', 'id_srole', 'id_trole', 'id_first_character', 'id_second_character', 'id_third_character'];
+                $required_fields = ['nickname', 'nationality', /*'email', 'passwd',*/ 'id_availability', 'id_rank', 'id_ambition', 'id_srole', 'id_trole', 'id_first_character', 'id_second_character', 'id_third_character'];
 
                 foreach ($required_fields as $field) {
                     if (!empty($params->{$field})) {
@@ -336,6 +466,17 @@ class UserController extends AbstractController
                 }
             }
 
+            if (!empty($params->age)) {
+                $user->setAge(new \DateTime($params->age));
+            }
+
+
+            if (!empty($params->short_description)) {
+                $user->setShortDescription($params->short_description);
+            }
+
+
+
             //COMPROBAR DUPLICADOS 
             $existingUser = $userRepository->findOneBy(['email' => $user->getEmail()]);
             if ($existingUser && $existingUser->getId() != $user->getId()) {
@@ -357,7 +498,8 @@ class UserController extends AbstractController
             // Cambiar respuesta por defecto a éxito
             $data['status'] = 'success';
             $data['code'] = 200;
-            $data['message'] = 'Los datos del usuario han sido actualizados correctamente.';
+            // $data['message'] = 'Los datos del usuario han sido actualizados correctamente.';
+            $data['message'] = $params;
         }
 
 
@@ -370,7 +512,7 @@ class UserController extends AbstractController
         // Recibir los datos del formulario
         $jsonData = $request->get('json', null);
         $data = json_decode($jsonData, true);
-    
+
         // Validar los datos del formulario
         if (empty($data['nombre']) || empty($data['email']) || empty($data['mensaje'])) {
             $response = [
@@ -379,18 +521,18 @@ class UserController extends AbstractController
             ];
             return new JsonResponse($response, 400);
         }
-    
+
         // Crear un mensaje de correo
         $message = (new Email())
             //->from($data['email'])
             ->from('playmatedaw@gmail.com')
             ->to('leonarisadria@gmail.com')
-            ->subject('Soporte de '.$data['email'])
-            ->text('Remitente: '.$data['nombre'].' ('.$data['email'].')'."\n\n".$data['mensaje']);
-    
+            ->subject('Soporte de ' . $data['email'])
+            ->text('Remitente: ' . $data['nombre'] . ' (' . $data['email'] . ')' . "\n\n" . $data['mensaje']);
+
         // Enviar el mensaje de correo
         $mailer->send($message);
-    
+
         // Devolver un echo con los datos del formulario
         $response = [
             'status' => 'success',
@@ -410,17 +552,10 @@ class UserController extends AbstractController
         ]);
     }
 
-    /*public function getAllUsers(): JsonResponse
-    {
-       /* $userRepository = $this->entityManager->getRepository(User::class);
-        $users = $userRepository->findAll();
-        return $this->json($users);
-    }*/
-
     public function getAllUsers(): Response
     {
         $entityManager = $this->entityManager;
-    
+
         $users = $entityManager->createQueryBuilder()
             ->select('u', 'c1', 'c2', 'c3', 'r', 'sr', 'tr', 'a', 'av')
             ->from(User::class, 'u')
@@ -434,12 +569,34 @@ class UserController extends AbstractController
             ->innerJoin('u.idAvailability', 'av')
             ->getQuery()
             ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
-    
+
         return $this->json($users);
     }
-    
 
-    
+    public function getUserByToken(Request $request, JwtAuth $jwt_auth)
+    {
+
+        //RECOGER CABECERA AUTENTICACION 
+        $token = $request->headers->get('Authorization');
+        //CREAR METODO PARA COMPROBAR SI EL TOKEN ES CORRECTO 
+        $authCheck = $jwt_auth->checkToken($token);
+
+        if ($authCheck) {
+            //ACTUALIAR AL USUARIO 
+
+            //CONSEGUIR ENTITY MANAGER
+            $em = $this->entityManager;
+            //CONSEGUIR LOS DATOS DEL USUARIO AUTENTICADO 
+            $identity = $jwt_auth->checkToken($token, true);
+
+            //CONSEGUIR EL USUARIO A ACTUALIZAR COMPLETO 
+            $userRepository = $this->entityManager->getRepository(User::class);
+            $user = $userRepository->findOneBy([
+                'id' => $identity->sub
+            ]);
+        };
 
 
-};
+        return $this->resjson($user);
+    }
+}

@@ -5,9 +5,9 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Availability
+ * Availabilities
  *
- * @ORM\Table(name="availability")
+ * @ORM\Table(name="availabilities")
  * @ORM\Entity
  */
 class Availability
@@ -24,7 +24,7 @@ class Availability
     /**
      * @var string|null
      *
-     * @ORM\Column(name="availability", type="string", length=100, nullable=false)
+     * @ORM\Column(name="availability", type="string", length=40, nullable=false)
      */
     private $availability;
 
@@ -33,7 +33,7 @@ class Availability
         return $this->idAvailability;
     }
 
-    public function isAvailability(): ?string
+    public function getAvailability(): ?string
     {
         return $this->availability;
     }
