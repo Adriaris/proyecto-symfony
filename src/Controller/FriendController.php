@@ -90,6 +90,7 @@ class FriendController extends AbstractController
         }
 
         // Crear una nueva instancia de la entidad Friend
+        
         $friend = new Friend();
         $friend->setUserId1($idUser1);
         $friend->setUserId2($idUser2);
@@ -196,10 +197,14 @@ class FriendController extends AbstractController
             foreach ($friendRequests as $request) {
                 $user1Repository = $this->entityManager->getRepository(User::class);
                 $user1 = $user1Repository->find($request->getUserId1());
-
+                $profileImg = $user1->getProfileImg();
+                if (!$profileImg) {
+                    $profileImg = 'default.png';
+                }
                 $friendRequestsArray[] = [
                     'id' => $request->getId(),
                     'nickname' => $user1->getNickname(),
+                    'profile_img' => 'http://localhost:8000/uploads/profile-img/'.$profileImg,
                     //'email' => $user1->getEmail(),
                     //'createdAt' => $request->getCreatedAt()
                 ];

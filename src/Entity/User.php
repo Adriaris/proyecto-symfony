@@ -362,6 +362,26 @@ class User implements \JsonSerializable
         return $this;
     }
 
+    /**
+     * @ORM\Column(type="string", length=255, options={"default": "user"})
+     */
+    private $role;
+
+    // Luego, necesitas agregar los métodos getter y setter correspondientes
+
+    public function getRole(): ?string
+    {
+        return $this->role;
+    }
+
+    public function setRole(string $role): self
+    {
+        $this->role = $role;
+
+        return $this;
+    }
+
+
     public function jsonSerialize()
     {
         return [
@@ -371,6 +391,7 @@ class User implements \JsonSerializable
             'nationality' => $this->nationality,
             'short_description' => $this->shortDescription,
             'email' => $this->email,
+            'role' => $this->role,
             //'passwd' => $this->passwd,
             //'profile_img' => 'http://localhost:8000/uploads/profile-img/'.$this->profileImg,
             'id_rank' => $this->idRank ? $this->idRank->getIdRank() : null,

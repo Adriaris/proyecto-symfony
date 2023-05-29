@@ -42,6 +42,12 @@ get_user_by_token:
   controller: App\Controller\UserController::getUserByToken
   methods: GET
 
+get_user_by_id:
+  path: /api/users/{id}
+  controller: App\Controller\UserController::getUserById
+  methods: GET
+
+
 app_friend:
   path: /friends
   controller: App\Controller\FriendController::addFriend

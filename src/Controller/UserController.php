@@ -166,6 +166,8 @@ class UserController extends AbstractController
                 $user->setIdFirstCharacter($characterRepository->find($params['id_first_character']));
                 $user->setIdSecondCharacter($characterRepository->find($params['id_second_character']));
                 $user->setIdThirdCharacter($characterRepository->find($params['id_third_character']));
+                $user->setRole('user');
+
 
                 // Guardar usuario en la base de datos
                 $entityManager = $this->entityManager;
@@ -308,62 +310,62 @@ class UserController extends AbstractController
     }
 
     public function getProfileImg(Request $request, JwtAuth $jwt_auth)
-{
-    // Recoger cabecera de autenticación
-    $token = $request->headers->get('Authorization');
-    // Crear método para comprobar si el token es correcto
-    $authCheck = $jwt_auth->checkToken($token);
+    {
+        // Recoger cabecera de autenticación
+        $token = $request->headers->get('Authorization');
+        // Crear método para comprobar si el token es correcto
+        $authCheck = $jwt_auth->checkToken($token);
 
-    // Respuesta por defecto
-    $data = [
-        'status' => 'error',
-        'code' => Response::HTTP_BAD_REQUEST,
-        'message' => 'Invalid request.',
-    ];
+        // Respuesta por defecto
+        $data = [
+            'status' => 'error',
+            'code' => Response::HTTP_BAD_REQUEST,
+            'message' => 'Invalid request.',
+        ];
 
-    // Si el token es correcto, realizar la búsqueda del usuario
-    if ($authCheck) {
-        // Conseguir el entity manager
-        $em = $this->entityManager;
+        // Si el token es correcto, realizar la búsqueda del usuario
+        if ($authCheck) {
+            // Conseguir el entity manager
+            $em = $this->entityManager;
 
-        // Conseguir los datos del usuario autenticado
-        $identity = $jwt_auth->checkToken($token, true);
+            // Conseguir los datos del usuario autenticado
+            $identity = $jwt_auth->checkToken($token, true);
 
-        // Conseguir el usuario por su ID
-        $userRepository = $em->getRepository(User::class);
-        $user = $userRepository->find($identity->sub);
+            // Conseguir el usuario por su ID
+            $userRepository = $em->getRepository(User::class);
+            $user = $userRepository->find($identity->sub);
 
-        // Verificar si se encontró el usuario
-        if ($user) {
-            // Obtener la ruta de la imagen de perfil
-            $profileImg = $user->getProfileImg();
-                        
-            // Verificar si se ha establecido una imagen de perfil
-            if ($profileImg) {
-                // La imagen de perfil existe, devolver la ruta
-                $data = [
-                    'status' => 'success',
-                    'code' => Response::HTTP_OK,
-                    'profile_img' => 'http://localhost:8000/uploads/profile-img/'.$profileImg,
-                ];
+            // Verificar si se encontró el usuario
+            if ($user) {
+                // Obtener la ruta de la imagen de perfil
+                $profileImg = $user->getProfileImg();
+
+                // Verificar si se ha establecido una imagen de perfil
+                if ($profileImg) {
+                    // La imagen de perfil existe, devolver la ruta
+                    $data = [
+                        'status' => 'success',
+                        'code' => Response::HTTP_OK,
+                        'profile_img' => 'http://localhost:8000/uploads/profile-img/' . $profileImg,
+                    ];
+                } else {
+                    $data = [
+                        'status' => 'success',
+                        'code' => Response::HTTP_OK,
+                        'profile_img' => 'http://localhost:8000/uploads/profile-img/default.png',
+                    ];
+                }
             } else {
-                $data = [
-                    'status' => 'success',
-                    'code' => Response::HTTP_OK,
-                    'profile_img' => 'http://localhost:8000/uploads/profile-img/default.png',
-                ];
+                // No se encontró el usuario
+                $data['message'] = 'User not found.';
             }
-        } else {
-            // No se encontró el usuario
-            $data['message'] = 'User not found.';
         }
+
+        // Crear la respuesta JSON
+        $response = new JsonResponse($data, $data['code']);
+
+        return $response;
     }
-
-    // Crear la respuesta JSON
-    $response = new JsonResponse($data, $data['code']);
-
-    return $response;
-}
 
 
 
@@ -480,13 +482,13 @@ class UserController extends AbstractController
             //COMPROBAR DUPLICADOS 
             $existingUser = $userRepository->findOneBy(['email' => $user->getEmail()]);
             if ($existingUser && $existingUser->getId() != $user->getId()) {
-                $data['message'] = "Ya existe un usuario con ese email";
+                $data['message'] = "There is already a user with that email";
                 return $this->resjson($data);
             }
 
             $existingNickname = $userRepository->findOneBy(['nickname' => $user->getNickname()]);
             if ($existingNickname && $existingNickname->getId() != $user->getId()) {
-                $data['message'] = "Ya existe un usuario con ese nickname";
+                $data['message'] = "There is already a user with that nickname";
                 return $this->resjson($data);
             }
 
@@ -552,25 +554,100 @@ class UserController extends AbstractController
         ]);
     }
 
-    public function getAllUsers(): Response
+    public function getAllUsers(Request $request, JwtAuth $jwt_auth): Response
     {
-        $entityManager = $this->entityManager;
+        //RECOGER CABECERA AUTENTICACION 
+        $token = $request->headers->get('Authorization');
+        //CREAR METODO PARA COMPROBAR SI EL TOKEN ES CORRECTO 
+        $authCheck = $jwt_auth->checkToken($token);
 
-        $users = $entityManager->createQueryBuilder()
-            ->select('u', 'c1', 'c2', 'c3', 'r', 'sr', 'tr', 'a', 'av')
-            ->from(User::class, 'u')
-            ->innerJoin('u.idFirstCharacter', 'c1')
-            ->innerJoin('u.idSecondCharacter', 'c2')
-            ->innerJoin('u.idThirdCharacter', 'c3')
-            ->innerJoin('u.idRank', 'r')
-            ->innerJoin('u.idSrole', 'sr')
-            ->innerJoin('u.idTrole', 'tr')
-            ->innerJoin('u.idAmbition', 'a')
-            ->innerJoin('u.idAvailability', 'av')
-            ->getQuery()
-            ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+        //respuesta por defecto 
+        $data = [
+            'status' => 'error',
+            'code' => 400,
+            'message' => 'Metodo getAllUsers del controlador usuarios',
+        ];
 
-        return $this->json($users);
+        //SI ES CORRECTO HACER LA ACTUALZIACION DEL USUARIO 
+        if ($authCheck) {
+            $page = $request->query->get('page', 1); // Default a 1
+            $pageSize = $request->query->get('pageSize', 12); // Default a 12
+            $filters = json_decode($request->query->get('filters', '{}'), true); // Default a un objeto vacío
+
+            $entityManager = $this->entityManager;
+            $queryBuilder = $entityManager->createQueryBuilder();
+
+            $queryBuilder
+                ->select('u', 'c1', 'c2', 'c3', 'r', 'sr', 'tr', 'a', 'av')
+                ->from(User::class, 'u')
+                ->innerJoin('u.idFirstCharacter', 'c1')
+                ->innerJoin('u.idSecondCharacter', 'c2')
+                ->innerJoin('u.idThirdCharacter', 'c3')
+                ->innerJoin('u.idRank', 'r')
+                ->innerJoin('u.idSrole', 'sr')
+                ->innerJoin('u.idTrole', 'tr')
+                ->innerJoin('u.idAmbition', 'a')
+                ->innerJoin('u.idAvailability', 'av');
+
+            // Aplicar los filtros
+            if (!empty($filters['nationality'])) {
+                $queryBuilder->andWhere('u.nationality = :nationality')
+                    ->setParameter('nationality', $filters['nationality']);
+            }
+
+            if (!empty($filters['availability'])) {
+                $queryBuilder->andWhere('u.idAvailability = :availability')
+                    ->setParameter('availability', $filters['availability']);
+            }
+
+
+            if (!empty($filters['character'])) {
+                $queryBuilder->andWhere('u.idFirstCharacter = :character 
+                OR u.idSecondCharacter = :character 
+                OR u.idThirdCharacter = :character')
+                    ->setParameter('character', $filters['character']);
+            }
+
+            if (!empty($filters['sRole'])) {
+                $queryBuilder->andWhere('u.idSrole = :sRole')
+                    ->setParameter('sRole', $filters['sRole']);
+            }
+
+            if (!empty($filters['tRole'])) {
+                $queryBuilder->andWhere('u.idTrole = :tRole')
+                    ->setParameter('tRole', $filters['tRole']);
+            }
+
+            if (!empty($filters['rank'])) {
+                $queryBuilder->andWhere('u.idRank = :rank')
+                    ->setParameter('rank', $filters['rank']);
+            }
+
+
+            // Primero, calculamos el número total de usuarios
+            $totalUsers = clone $queryBuilder;
+            $totalUsers = $totalUsers
+                ->select('count(u.id)')
+                ->getQuery()
+                ->getSingleScalarResult();
+
+            // Calculamos el número total de páginas
+            $totalPages = ceil($totalUsers / $pageSize);
+
+            $queryBuilder
+                ->setMaxResults($pageSize)
+                ->setFirstResult(($page - 1) * $pageSize);
+
+            $users = $queryBuilder->getQuery()->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+
+            // Devolvemos la información de los usuarios junto con la información de la paginación
+            return $this->json([
+                'data' => $users,
+                'totalPages' => $totalPages,
+                'currentPage' => $page,
+            ]);
+        }
+        return $this->json($data);
     }
 
     public function getUserByToken(Request $request, JwtAuth $jwt_auth)
@@ -599,4 +676,50 @@ class UserController extends AbstractController
 
         return $this->resjson($user);
     }
+
+    public function getUserById(Request $request, $id, JwtAuth $jwt_auth): Response
+{
+    //RECOGER CABECERA AUTENTICACION 
+    $token = $request->headers->get('Authorization');
+    //CREAR METODO PARA COMPROBAR SI EL TOKEN ES CORRECTO 
+    $authCheck = $jwt_auth->checkToken($token);
+
+    //respuesta por defecto 
+    $data = [
+        'status' => 'error',
+        'code' => 400,
+        'message' => 'Metodo getUserById del controlador usuarios',
+    ];
+
+    //SI ES CORRECTO HACER LA ACTUALZIACION DEL USUARIO 
+    if ($authCheck) {
+        $entityManager = $this->entityManager;
+        $queryBuilder = $entityManager->createQueryBuilder();
+
+        $queryBuilder
+            ->select('u', 'c1', 'c2', 'c3', 'r', 'sr', 'tr', 'a', 'av')
+            ->from(User::class, 'u')
+            ->innerJoin('u.idFirstCharacter', 'c1')
+            ->innerJoin('u.idSecondCharacter', 'c2')
+            ->innerJoin('u.idThirdCharacter', 'c3')
+            ->innerJoin('u.idRank', 'r')
+            ->innerJoin('u.idSrole', 'sr')
+            ->innerJoin('u.idTrole', 'tr')
+            ->innerJoin('u.idAmbition', 'a')
+            ->innerJoin('u.idAvailability', 'av')
+            ->where('u.id = :id')
+            ->setParameter('id', $id);
+
+        $user = $queryBuilder->getQuery()->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+
+        // Devolvemos la información del usuario
+        return $this->json([
+            'data' => $user,
+        ]);
+    }
+    return $this->json($data);
+}
+
+
+    
 }
